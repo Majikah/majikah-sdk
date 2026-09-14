@@ -1,0 +1,10 @@
+node_modules
+dist
+
+
+test/debug-mp4.ts
+
+
+*.env
+
+_key

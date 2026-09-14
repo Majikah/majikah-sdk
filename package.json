@@ -1,0 +1,67 @@
+{
+  "name": "@majikah/sdk",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Official TypeScript client SDK for the Majikah ecosystem, providing unified access to Majik Universal ID (MUID) identity verification, Time Stamping Authority (TSA) issuing, cryptographically signed link claims (SLink), and on-chain document notarization flows.",
+  "license": "Apache-2.0",
+  "author": "Majikah Solutions OPC",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Majikah/majikah-sdk.git"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/jedlsf"
+  },
+  "keywords": [
+    "majikah",
+    "sdk",
+    "typescript",
+    "muid",
+    "tsa",
+    "timestamping",
+    "slink",
+    "notary",
+    "notarization",
+    "digital-signatures",
+    "cryptography",
+    "identity-verification",
+    "blockchain-anchor",
+    "majik-signature",
+    "security"
+  ],
+  "homepage": "https://github.com/Majikah/majikah-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/Majikah/majikah-sdk/issues"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "package": "npm run build && npm version patch && git push && git push --tags",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:tsa": "npx vitest test/sdk-tsa.test.ts",
+    "test:slink": "npx vitest test/sdk-slink.test.ts",
+    "test:notary": "npx vitest test/sdk-notary.test.ts",
+    "test:muid": "npx vitest test/sdk-muid.test.ts"
+  },
+  "dependencies": {
+    "@majikah/majik-key": "^0.4.0",
+    "@majikah/majik-signature": "^0.4.1",
+    "@majikah/majik-slink": "^0.2.1",
+    "@majikah/majik-universal-id": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "dotenv": "^17.4.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
