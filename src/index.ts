@@ -22,3 +22,7 @@ export {
 
 export { createMuidPublicKeyResolver } from "./services/muid/key-resolver";
 export { base64ToBytes, bytesToBase64 } from "./services/shared/encoding";
+export {
+  resolveTargetSignature,
+  type ResolveSignatureOptions,
+} from "./services/shared/resolve-signature";
