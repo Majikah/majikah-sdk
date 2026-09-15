@@ -3,8 +3,9 @@ export * from "./types";
 export * from "./services";
 export { MajikahSDKClient } from "./client/MajikahSDKClient";
 
-export { HttpClient } from "./transport/HttpClient";
+export { HttpClient, HttpRequestOptions } from "./transport/HttpClient";
 
+export * from "@majikah/majik-notary";
 export * from "@majikah/majik-key";
 export * from "@majikah/majik-signature";
 export {

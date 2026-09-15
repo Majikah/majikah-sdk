@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "@majikah/majik-key": "^0.4.0",
+    "@majikah/majik-notary": "^0.1.0",
     "@majikah/majik-signature": "^0.4.1",
     "@majikah/majik-slink": "^0.2.1",
     "@majikah/majik-universal-id": "^0.3.0"
