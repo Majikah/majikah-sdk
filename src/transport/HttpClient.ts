@@ -15,7 +15,7 @@ import { parseRetryAfterMs } from "./retry-after";
 /**
  * Options for an individual HTTP request made through the API client.
  */
-interface RequestOptions {
+export interface HttpRequestOptions {
   /** HTTP method used for the request. */
   method: "GET" | "POST" | "DELETE";
 
@@ -95,7 +95,7 @@ export class HttpClient {
   async request<T>(
     group: ServiceGroup,
     path: string,
-    opts: RequestOptions,
+    opts: HttpRequestOptions,
   ): Promise<T> {
     const url = this.buildUrl(group, path, opts.query);
     const canRetry = opts.method === "GET" || opts.idempotent === true;
@@ -147,7 +147,7 @@ export class HttpClient {
    * @returns The response data returned by the API.
    * @throws MajikahError When the request times out or the API returns an error.
    */
-  private async attempt<T>(url: URL, opts: RequestOptions): Promise<T> {
+  private async attempt<T>(url: URL, opts: HttpRequestOptions): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
 
