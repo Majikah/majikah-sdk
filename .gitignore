@@ -8,3 +8,7 @@ test/debug-mp4.ts
 *.env
 
 _key
+
+docs
+
+typedoc.json

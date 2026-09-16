@@ -1,0 +1,856 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Majikah Public API",
+    "description": "OpenAPI 3.0.3 specification directly synchronized with the itty-router production gateway source code for MUID, TSA, SLink, and Notary services.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Majikah Solutions OPC",
+      "url": "https://majikah.solutions",
+      "email": "business@majikah.solutions"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api-public.majikah.solutions",
+      "description": "Production Gateway"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/muid/v1/me": {
+      "get": {
+        "summary": "Get authenticated MUID profile",
+        "operationId": "getMuidMe",
+        "tags": ["MUID"],
+        "responses": {
+          "200": {
+            "description": "Authenticated MUID profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MuidResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/muid/v1/{id}/public": {
+      "get": {
+        "summary": "Lookup public MUID profile, SLinks, and key history",
+        "operationId": "getMuidPublicById",
+        "tags": ["MUID"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "MUID ID or username (e.g., 'thezelijah')",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public MUID profile payload retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MuidPublicLookupResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/muid/v1/verify": {
+      "post": {
+        "summary": "Verify signature envelope against a MUID",
+        "operationId": "verifyMuidSignature",
+        "tags": ["MUID"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MuidVerifyRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MuidVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid signature envelope or request body"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tsa/v1/timestamp": {
+      "post": {
+        "summary": "Issue a trusted timestamp token",
+        "operationId": "issueTsaTimestamp",
+        "tags": ["TSA"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MajikTSARequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Timestamp token issued or returned from cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TsaTimestampResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "402": {
+            "description": "Quota exhausted (QUOTA_EXHAUSTED)"
+          },
+          "503": {
+            "description": "TSA quota ledger service error (QUOTA_SERVICE_ERROR)"
+          }
+        }
+      }
+    },
+    "/tsa/v1/quota": {
+      "get": {
+        "summary": "Get TSA credit ledger status",
+        "operationId": "getTsaQuota",
+        "tags": ["TSA"],
+        "responses": {
+          "200": {
+            "description": "TSA credit status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TsaQuotaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slink/v1": {
+      "post": {
+        "summary": "Create a new SLink claim",
+        "operationId": "createSLink",
+        "tags": ["SLink"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SLinkPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SLink created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLinkSingleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "Challenge code not found during DNS/HTML verification (CHALLENGE_NOT_FOUND)"
+          }
+        }
+      }
+    },
+    "/slink/v1/me": {
+      "get": {
+        "summary": "Get authenticated caller's SLinks",
+        "operationId": "getSLinksMe",
+        "tags": ["SLink"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated user SLinks retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLinkListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed pagination cursor (INVALID_CURSOR)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/slink/v1/verify": {
+      "get": {
+        "summary": "Search SLink claims by URL or content hash",
+        "operationId": "verifySLink",
+        "tags": ["SLink"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "URL to generate challenge hash and search against",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hash",
+            "in": "query",
+            "required": false,
+            "description": "Direct content hash to search against",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search matching SLink claims",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLinkSearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing query parameters or invalid URL"
+          }
+        }
+      }
+    },
+    "/slink/v1/{id}": {
+      "get": {
+        "summary": "Get public view of a single SLink claim",
+        "operationId": "getSLinkById",
+        "tags": ["SLink"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SLink claim found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLinkPublicViewResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete SLink claim by ID (owner only)",
+        "operationId": "deleteSLink",
+        "tags": ["SLink"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SLink deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLinkDeleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/notary/v1/payment": {
+      "post": {
+        "summary": "Create or resume payment order for document anchoring",
+        "operationId": "createNotaryPayment",
+        "tags": ["Notary"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sealHash": { "type": "string" }
+                },
+                "required": ["sealHash"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment order details or existing anchor status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotaryPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "description": "Payment already completed for this document (ALREADY_PAID)"
+          }
+        }
+      }
+    },
+    "/notary/v1/register": {
+      "post": {
+        "summary": "Submit seal hash for on-chain anchoring after payment confirmation",
+        "operationId": "registerNotaryAnchor",
+        "tags": ["Notary"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sealHash": { "type": "string" }
+                },
+                "required": ["sealHash"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Anchor submitted or existing anchor returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotaryRegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "No completed payment found for this seal hash (PAYMENT_REQUIRED)"
+          },
+          "503": {
+            "description": "Service temporarily unavailable due to fee payer balance"
+          }
+        }
+      }
+    },
+    "/notary/v1/status/{id}": {
+      "get": {
+        "summary": "Poll anchor confirmation status",
+        "operationId": "getNotaryAnchorStatus",
+        "tags": ["Notary"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Anchor confirmation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotaryStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "API Key missing or invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Requested resource was not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "code": { "type": "string" }
+        },
+        "required": ["success", "message"]
+      },
+      "MuidProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "username": { "type": "string" },
+          "display_name": { "type": "string" },
+          "public_key": { "type": "string" },
+          "hash": { "type": "string" },
+          "status": { "type": "string" },
+          "tier": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "public_profile": {
+            "type": "object",
+            "properties": {
+              "avatar_url": { "type": "string", "format": "uri" },
+              "display_name": { "type": "string" },
+              "location_label": { "type": "string" },
+              "social_handles": { "type": "object" },
+              "preferred_language": { "type": "string" }
+            }
+          },
+          "signing_key": {
+            "type": "object",
+            "properties": {
+              "fingerprint": { "type": "string" },
+              "ed_public_key": { "type": "string" },
+              "ml_dsa_public_key": { "type": "string" },
+              "registered_at": { "type": "string", "format": "date-time" }
+            }
+          },
+          "verification_stages": {
+            "type": "object",
+            "properties": {
+              "id_verification": { "type": "boolean" },
+              "liveness": { "type": "boolean" },
+              "face_match": { "type": "boolean" },
+              "phone_verification": { "type": "boolean" },
+              "ip_analysis": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "MuidResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/MuidProfile" }
+        }
+      },
+      "MuidPublicLookupResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "muid": { "$ref": "#/components/schemas/MuidProfile" },
+              "slinks": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "key_history": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fingerprint": { "type": "string" },
+                    "bundle_hash": { "type": "string" },
+                    "status": { "type": "string" },
+                    "activated_at": { "type": "string", "format": "date-time" },
+                    "deactivated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MuidVerifyRequestBody": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Optional MUID to verify against"
+          },
+          "signature": {
+            "type": "object",
+            "description": "MajikSignatureJSON object"
+          }
+        },
+        "required": ["signature"]
+      },
+      "MuidVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "valid": { "type": "boolean" },
+              "trustLevel": { "type": "string" },
+              "reason": { "type": "string" },
+              "signerId": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "MajikTSARequest": {
+        "type": "object",
+        "properties": {
+          "digest": {
+            "type": "object",
+            "properties": {
+              "algorithm": { "type": "string" },
+              "value": { "type": "string" }
+            },
+            "required": ["value"]
+          }
+        },
+        "required": ["digest"]
+      },
+      "TsaTimestampResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": { "type": "object" }
+        }
+      },
+      "TsaQuotaResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "tsa_credits": {
+                "type": "object",
+                "properties": {
+                  "free_remaining": { "type": "integer" },
+                  "free_daily_limit": { "type": "integer" },
+                  "paid_credits": { "type": "integer" },
+                  "resets_at": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SLinkSignature": {
+        "type": "object",
+        "properties": {
+          "v": { "type": "integer" },
+          "signerId": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "contentHash": { "type": "string" },
+          "contentType": { "type": "string" },
+          "edSignature": { "type": "string" },
+          "mlDsaSignature": { "type": "string" }
+        }
+      },
+      "SLinkObject": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "domain": { "type": "string" },
+          "subdomain": { "type": "string" },
+          "path": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "hash": { "type": "string" },
+          "v_code": { "type": "string" },
+          "source": { "type": "string" },
+          "status": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "verified_at": { "type": "string", "nullable": true },
+          "signature": { "$ref": "#/components/schemas/SLinkSignature" },
+          "muid": { "type": "string", "format": "uuid" },
+          "version": { "type": "integer" },
+          "claim_type": { "type": "string" },
+          "verification_method": { "type": "string", "nullable": true }
+        }
+      },
+      "SLinkPayload": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "domain": { "type": "string" },
+          "hash": { "type": "string" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "signature": { "$ref": "#/components/schemas/SLinkSignature" }
+        },
+        "required": ["signature", "user_id"]
+      },
+      "SLinkSingleResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/SLinkObject" }
+        }
+      },
+      "SLinkPublicViewResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "slink": { "$ref": "#/components/schemas/SLinkObject" },
+              "muid": { "$ref": "#/components/schemas/MuidProfile" }
+            }
+          }
+        }
+      },
+      "SLinkListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SLinkObject" }
+              },
+              "next_cursor": { "type": "string", "nullable": true },
+              "has_more": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "SLinkSearchResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "hash": { "type": "string" },
+              "matches": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "count": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "SLinkDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" }
+            }
+          }
+        }
+      },
+      "MajikChainAnchor": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "confirmed", "finalized", "failed"]
+          },
+          "sealHash": { "type": "string" },
+          "txHash": { "type": "string", "nullable": true },
+          "slot": { "type": "integer", "nullable": true },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "NotaryPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "anchor": { "$ref": "#/components/schemas/MajikChainAnchor" },
+              "order_id": { "type": "string" },
+              "checkout_url": { "type": "string", "format": "uri" },
+              "amount_cents": { "type": "integer" },
+              "currency": { "type": "string" },
+              "expires_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "NotaryRegisterResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/MajikChainAnchor" }
+        }
+      },
+      "NotaryStatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/MajikChainAnchor" }
+        }
+      }
+    }
+  }
+}
