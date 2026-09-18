@@ -2,12 +2,15 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Majikah Public API",
-    "description": "OpenAPI 3.0.3 specification directly synchronized with the itty-router production gateway source code for MUID, TSA, SLink, and Notary services.",
+    "description": "Public REST API for Majikah services including MUID identity, trusted timestamps (TSA), SLinks, and blockchain document notarization. This specification is intended to stay synchronized with the production gateway.",
     "version": "1.0.0",
     "contact": {
       "name": "Majikah Solutions OPC",
       "url": "https://majikah.solutions",
       "email": "business@majikah.solutions"
+    },
+    "license": {
+      "name": "Proprietary"
     }
   },
   "servers": [
@@ -16,24 +19,89 @@
       "description": "Production Gateway"
     }
   ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Gateway health and liveness endpoints."
+    },
+    {
+      "name": "MUID",
+      "description": "Majikah Universal Identity public and authenticated profile operations."
+    },
+    {
+      "name": "TSA",
+      "description": "Trusted timestamp issuance and credit/quota operations."
+    },
+    {
+      "name": "SLink",
+      "description": "Signed URL/content claim creation, lookup, verification, and deletion."
+    },
+    {
+      "name": "Notary",
+      "description": "Document seal-hash payment, blockchain anchoring, and confirmation status."
+    }
+  ],
   "security": [
     {
       "ApiKeyAuth": []
     }
   ],
   "paths": {
+    "/health": {
+      "get": {
+        "summary": "Check API health",
+        "description": "Returns the gateway health status and current Unix timestamp in milliseconds.",
+        "operationId": "getHealth",
+        "tags": ["Health"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Gateway is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "timestamp": 1789401285446
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "summary": "Check API health without a response body",
+        "description": "Liveness check. A healthy gateway responds with HTTP 200 and no response body.",
+        "operationId": "headHealth",
+        "tags": ["Health"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Gateway is healthy. Response body is empty."
+          }
+        }
+      }
+    },
     "/muid/v1/me": {
       "get": {
         "summary": "Get authenticated MUID profile",
+        "description": "Returns the MUID associated with the authenticated API identity.",
         "operationId": "getMuidMe",
         "tags": ["MUID"],
         "responses": {
           "200": {
-            "description": "Authenticated MUID profile retrieved successfully",
+            "description": "MUID retrieved successfully.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MuidResponse"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/MuidResponseExample"
+                  }
                 }
               }
             }
@@ -49,7 +117,8 @@
     },
     "/muid/v1/{id}/public": {
       "get": {
-        "summary": "Lookup public MUID profile, SLinks, and key history",
+        "summary": "Lookup public MUID profile",
+        "description": "Looks up a public MUID profile by MUID ID or username.",
         "operationId": "getMuidPublicById",
         "tags": ["MUID"],
         "parameters": [
@@ -57,19 +126,60 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "MUID ID or username (e.g., 'thezelijah')",
+            "description": "MUID UUID or username.",
+            "example": "thezelijah",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Public MUID profile payload retrieved",
+            "description": "Public MUID profile retrieved.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MuidPublicLookupResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Public MUID profile retrieved successfully",
+                  "data": {
+                    "muid": {
+                      "id": "0000133e-8910-7918-84d0-c1e9173cde52",
+                      "public_key": "YCIp+mQ3FkgI9J5guQqjdP6hDdtaOsMx8g/27kSuKB0=",
+                      "hash": "652fc1796a624ec523b0dcdd5264d87aaceb9495a022fa9e201ee9dc4be9a8793a52144d3bf94b60ed1370f460ea703ca05893034f234637bdcec62357954626",
+                      "timestamp": "2026-03-22T01:52:38.673Z",
+                      "public_profile": {
+                        "avatar_url": "https://pimg.majikah.solutions/example/profile.webp",
+                        "display_name": "Zelijah",
+                        "location_label": "Mandaluyong, Philippines",
+                        "social_handles": {},
+                        "preferred_language": "en"
+                      },
+                      "tier": "enhanced",
+                      "status": "active",
+                      "display_name": "Zelijah",
+                      "signing_key": {
+                        "fingerprint": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE=",
+                        "ed_public_key": "2UlVEm3QRAzFm0ccTOTVa6bDxER4bQYjriVxdO7VmLg=",
+                        "ml_dsa_public_key": "BASE64_ML_DSA_87_PUBLIC_KEY",
+                        "registered_at": "2026-08-12T14:33:14.550Z"
+                      },
+                      "verification_stages": {
+                        "id_verification": true,
+                        "liveness": true,
+                        "face_match": true,
+                        "phone_verification": false,
+                        "ip_analysis": true
+                      },
+                      "user_id": "3b538117-d6a9-4ffb-b917-12d037d9c38c",
+                      "username": "thezelijah"
+                    },
+                    "slinks": [],
+                    "key_history": []
+                  }
                 }
               }
             }
@@ -83,6 +193,7 @@
     "/muid/v1/verify": {
       "post": {
         "summary": "Verify signature envelope against a MUID",
+        "description": "Verifies a Majik Signature JSON envelope and optionally checks that it belongs to a specific MUID.",
         "operationId": "verifyMuidSignature",
         "tags": ["MUID"],
         "requestBody": {
@@ -91,23 +202,57 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MuidVerifyRequestBody"
+              },
+              "example": {
+                "id": "0000133e-8910-7918-84d0-c1e9173cde52",
+                "signature": {
+                  "version": 1,
+                  "signerId": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE=",
+                  "contentHash": "SHA256:example-content-hash",
+                  "timestamp": "2026-09-13T05:05:00.094Z",
+                  "edSignature": "BASE64_ED25519_SIGNATURE",
+                  "mlDsaSignature": "BASE64_ML_DSA_87_SIGNATURE"
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Verification outcome",
+            "description": "Verification outcome.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MuidVerifyResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Signature verification completed",
+                  "data": {
+                    "valid": true,
+                    "trustLevel": "verified",
+                    "reason": "Signature is valid and signer matches the requested MUID.",
+                    "signerId": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE=",
+                    "timestamp": "2026-09-13T05:05:00.094Z"
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid signature envelope or request body"
+            "description": "Invalid signature envelope or request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid signature envelope",
+                  "code": "INVALID_SIGNATURE"
+                }
+              }
+            }
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -118,6 +263,7 @@
     "/tsa/v1/timestamp": {
       "post": {
         "summary": "Issue a trusted timestamp token",
+        "description": "Creates a signed trusted timestamp for a supplied digest. If the same digest is already cached within the configured rolling cache window, the existing timestamp token may be returned without consuming another credit.",
         "operationId": "issueTsaTimestamp",
         "tags": ["TSA"],
         "requestBody": {
@@ -126,29 +272,76 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MajikTSARequest"
+              },
+              "example": {
+                "digest": {
+                  "algorithm": "SHA-256",
+                  "value": "7QJWn+ta/40GwU3SycVglWlFQpnyvwLiTxqh49913rg="
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Timestamp token issued or returned from cache",
+            "description": "Timestamp token issued or returned from cache.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TsaTimestampResponse"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/TsaTimestampResponseExample"
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid digest",
+                  "code": "INVALID_REQUEST"
+                }
+              }
+            }
           },
           "402": {
-            "description": "Quota exhausted (QUOTA_EXHAUSTED)"
+            "description": "TSA quota exhausted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "TSA credits exhausted",
+                  "code": "QUOTA_EXHAUSTED"
+                }
+              }
+            }
           },
           "503": {
-            "description": "TSA quota ledger service error (QUOTA_SERVICE_ERROR)"
+            "description": "TSA quota ledger service unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "TSA quota ledger service temporarily unavailable",
+                  "code": "QUOTA_SERVICE_ERROR"
+                }
+              }
+            }
           }
         }
       }
@@ -156,18 +349,34 @@
     "/tsa/v1/quota": {
       "get": {
         "summary": "Get TSA credit ledger status",
+        "description": "Returns the authenticated caller's free and paid TSA credit balances and the next free-credit reset time.",
         "operationId": "getTsaQuota",
         "tags": ["TSA"],
         "responses": {
           "200": {
-            "description": "TSA credit status retrieved",
+            "description": "TSA credit status retrieved.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TsaQuotaResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Quota retrieved successfully",
+                  "data": {
+                    "tsa_credits": {
+                      "free_remaining": 5,
+                      "free_daily_limit": 5,
+                      "paid_credits": 143,
+                      "resets_at": "2026-09-14T00:00:00.000Z"
+                    }
+                  }
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -175,6 +384,7 @@
     "/slink/v1": {
       "post": {
         "summary": "Create a new SLink claim",
+        "description": "Creates a signed SLink claim from the supplied URL/content metadata and signature envelope.",
         "operationId": "createSLink",
         "tags": ["SLink"],
         "requestBody": {
@@ -183,29 +393,99 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SLinkPayload"
+              },
+              "example": {
+                "url": "https://example.com/articles/example",
+                "domain": "example.com",
+                "hash": "sha256:example-content-hash",
+                "user_id": "3b538117-d6a9-4ffb-b917-12d037d9c38c",
+                "signature": {
+                  "v": 1,
+                  "signerId": "0000133e-8910-7918-84d0-c1e9173cde52",
+                  "timestamp": "2026-09-13T05:05:00.094Z",
+                  "contentHash": "sha256:example-content-hash",
+                  "contentType": "text/html",
+                  "edSignature": "BASE64_ED25519_SIGNATURE",
+                  "mlDsaSignature": "BASE64_ML_DSA_87_SIGNATURE"
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "SLink created successfully",
+            "description": "SLink created successfully.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SLinkSingleResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "SLink created successfully",
+                  "data": {
+                    "id": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71",
+                    "user_id": "3b538117-d6a9-4ffb-b917-12d037d9c38c",
+                    "domain": "example.com",
+                    "subdomain": "",
+                    "path": "/articles/example",
+                    "url": "https://example.com/articles/example",
+                    "hash": "sha256:example-content-hash",
+                    "v_code": "MJKS-7X3P9",
+                    "source": "api",
+                    "status": "active",
+                    "timestamp": "2026-09-13T05:05:01.000Z",
+                    "verified_at": "2026-09-13T05:05:02.000Z",
+                    "signature": {
+                      "v": 1,
+                      "signerId": "0000133e-8910-7918-84d0-c1e9173cde52",
+                      "timestamp": "2026-09-13T05:05:00.094Z",
+                      "contentHash": "sha256:example-content-hash",
+                      "contentType": "text/html",
+                      "edSignature": "BASE64_ED25519_SIGNATURE",
+                      "mlDsaSignature": "BASE64_ML_DSA_87_SIGNATURE"
+                    },
+                    "muid": "0000133e-8910-7918-84d0-c1e9173cde52",
+                    "version": 1,
+                    "claim_type": "url",
+                    "verification_method": "dns_html"
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid SLink payload",
+                  "code": "INVALID_REQUEST"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "422": {
-            "description": "Challenge code not found during DNS/HTML verification (CHALLENGE_NOT_FOUND)"
+            "description": "Challenge code not found during DNS/HTML verification.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Challenge code not found during DNS/HTML verification",
+                  "code": "CHALLENGE_NOT_FOUND"
+                }
+              }
+            }
           }
         }
       }
@@ -220,8 +500,12 @@
             "name": "limit",
             "in": "query",
             "required": false,
+            "description": "Maximum number of SLinks to return.",
+            "example": 25,
             "schema": {
               "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "default": 50
             }
           },
@@ -229,6 +513,8 @@
             "name": "cursor",
             "in": "query",
             "required": false,
+            "description": "Opaque pagination cursor returned by a previous request.",
+            "example": "eyJwYWdlIjoyfQ==",
             "schema": {
               "type": "string"
             }
@@ -236,17 +522,38 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated user SLinks retrieved",
+            "description": "Paginated user SLinks retrieved.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SLinkListResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "SLinks retrieved successfully",
+                  "data": {
+                    "items": [],
+                    "next_cursor": null,
+                    "has_more": false
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Malformed pagination cursor (INVALID_CURSOR)"
+            "description": "Malformed pagination cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Malformed pagination cursor",
+                  "code": "INVALID_CURSOR"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -257,6 +564,7 @@
     "/slink/v1/verify": {
       "get": {
         "summary": "Search SLink claims by URL or content hash",
+        "description": "Provide either `url` or `hash` to search for matching SLink claims.",
         "operationId": "verifySLink",
         "tags": ["SLink"],
         "parameters": [
@@ -264,16 +572,19 @@
             "name": "url",
             "in": "query",
             "required": false,
-            "description": "URL to generate challenge hash and search against",
+            "description": "URL to normalize, hash, and search against.",
+            "example": "https://example.com/articles/example",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             }
           },
           {
             "name": "hash",
             "in": "query",
             "required": false,
-            "description": "Direct content hash to search against",
+            "description": "Direct content hash to search against.",
+            "example": "sha256:example-content-hash",
             "schema": {
               "type": "string"
             }
@@ -281,17 +592,38 @@
         ],
         "responses": {
           "200": {
-            "description": "Search matching SLink claims",
+            "description": "Search matching SLink claims.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SLinkSearchResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "SLink search completed",
+                  "data": {
+                    "hash": "sha256:example-content-hash",
+                    "matches": [],
+                    "count": 0
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Missing query parameters or invalid URL"
+            "description": "Missing query parameters or invalid URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Provide either url or hash",
+                  "code": "INVALID_QUERY"
+                }
+              }
+            }
           }
         }
       }
@@ -306,18 +638,62 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "description": "SLink claim UUID.",
+            "example": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "SLink claim found",
+            "description": "SLink claim found.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SLinkPublicViewResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "SLink retrieved successfully",
+                  "data": {
+                    "slink": {
+                      "id": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71",
+                      "user_id": "3b538117-d6a9-4ffb-b917-12d037d9c38c",
+                      "domain": "example.com",
+                      "subdomain": "",
+                      "path": "/articles/example",
+                      "url": "https://example.com/articles/example",
+                      "hash": "sha256:example-content-hash",
+                      "v_code": "MJKS-7X3P9",
+                      "source": "api",
+                      "status": "active",
+                      "timestamp": "2026-09-13T05:05:01.000Z",
+                      "verified_at": "2026-09-13T05:05:02.000Z",
+                      "signature": {
+                        "v": 1,
+                        "signerId": "0000133e-8910-7918-84d0-c1e9173cde52",
+                        "timestamp": "2026-09-13T05:05:00.094Z",
+                        "contentHash": "sha256:example-content-hash",
+                        "contentType": "text/html",
+                        "edSignature": "BASE64_ED25519_SIGNATURE",
+                        "mlDsaSignature": "BASE64_ML_DSA_87_SIGNATURE"
+                      },
+                      "muid": "0000133e-8910-7918-84d0-c1e9173cde52",
+                      "version": 1,
+                      "claim_type": "url",
+                      "verification_method": "dns_html"
+                    },
+                    "muid": {
+                      "id": "0000133e-8910-7918-84d0-c1e9173cde52",
+                      "username": "thezelijah",
+                      "display_name": "Zelijah",
+                      "status": "active",
+                      "tier": "enhanced",
+                      "public_key": "YCIp+mQ3FkgI9J5guQqjdP6hDdtaOsMx8g/27kSuKB0="
+                    }
+                  }
                 }
               }
             }
@@ -328,7 +704,8 @@
         }
       },
       "delete": {
-        "summary": "Delete SLink claim by ID (owner only)",
+        "summary": "Delete SLink claim by ID",
+        "description": "Deletes the SLink claim associated with the authenticated owner.",
         "operationId": "deleteSLink",
         "tags": ["SLink"],
         "parameters": [
@@ -336,18 +713,28 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "description": "SLink claim UUID.",
+            "example": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "SLink deleted successfully",
+            "description": "SLink deleted successfully.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SLinkDeleteResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "SLink deleted successfully",
+                  "data": {
+                    "id": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71"
+                  }
                 }
               }
             }
@@ -364,6 +751,7 @@
     "/notary/v1/payment": {
       "post": {
         "summary": "Create or resume payment order for document anchoring",
+        "description": "Creates a payment intent for a document seal hash. If the document is already anchored, the existing anchor is returned and no payment is required.",
         "operationId": "createNotaryPayment",
         "tags": ["Notary"],
         "requestBody": {
@@ -371,41 +759,108 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "sealHash": { "type": "string" }
-                },
-                "required": ["sealHash"]
+                "$ref": "#/components/schemas/NotarySealHashRequest"
+              },
+              "example": {
+                "sealHash": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Payment order details or existing anchor status",
+            "description": "Payment intent created, resumed, or an existing anchor returned.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotaryPaymentResponse"
+                },
+                "examples": {
+                  "paymentRequired": {
+                    "summary": "Payment required",
+                    "value": {
+                      "success": true,
+                      "message": "Payment intent created — anchor will process once payment confirms",
+                      "data": {
+                        "order_id": "095ecd32-ac95-481d-85f9-acee53a5752a",
+                        "checkout_url": "https://pay.example.com/checkout/095ecd32-ac95-481d-85f9-acee53a5752a",
+                        "amount_cents": 5676,
+                        "currency": "PHP",
+                        "expires_at": "2026-09-14T16:29:18.445Z"
+                      }
+                    }
+                  },
+                  "alreadyAnchored": {
+                    "summary": "Document already anchored",
+                    "value": {
+                      "success": true,
+                      "message": "This document is already anchored — no payment needed",
+                      "data": {
+                        "anchor": {
+                          "version": 1,
+                          "id": "2a2a70b9-6c9e-4e68-8b48-fdca2a27bb2e",
+                          "payload": {
+                            "chain": "solana",
+                            "network": "mainnet-beta",
+                            "digest": {
+                              "algorithm": "SHA3-512",
+                              "value": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+                            }
+                          },
+                          "memo": "majik-notary-v-1:e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657",
+                          "txSignature": "215zxATdvnR2NA1stTuNxAfmaqKvPTqjRPL8iEUJFUKz1R2k9aAaM8Y4ZAmPMAH2oPWRe5i8iAHNa7fiZE8qJmt3",
+                          "slot": 443938859,
+                          "blockTime": null,
+                          "confirmedAt": "2026-09-03T09:38:41.951Z",
+                          "status": "confirmed"
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "sealHash is required",
+                  "code": "INVALID_REQUEST"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "409": {
-            "description": "Payment already completed for this document (ALREADY_PAID)"
+            "description": "Payment already completed for this document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Payment already completed for this document",
+                  "code": "ALREADY_PAID"
+                }
+              }
+            }
           }
         }
       }
     },
     "/notary/v1/register": {
       "post": {
-        "summary": "Submit seal hash for on-chain anchoring after payment confirmation",
+        "summary": "Submit seal hash for on-chain anchoring",
+        "description": "Submits a previously paid seal hash for blockchain anchoring. The same seal hash used for payment must be supplied.",
         "operationId": "registerNotaryAnchor",
         "tags": ["Notary"],
         "requestBody": {
@@ -413,37 +868,124 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "sealHash": { "type": "string" }
-                },
-                "required": ["sealHash"]
+                "$ref": "#/components/schemas/NotarySealHashRequest"
+              },
+              "example": {
+                "sealHash": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Anchor submitted or existing anchor returned",
+            "description": "Anchor submitted or an existing anchor returned.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotaryRegisterResponse"
+                },
+                "examples": {
+                  "alreadyRegistered": {
+                    "summary": "Anchor already exists",
+                    "value": {
+                      "success": true,
+                      "message": "Anchor already exists",
+                      "data": {
+                        "version": 1,
+                        "id": "2a2a70b9-6c9e-4e68-8b48-fdca2a27bb2e",
+                        "payload": {
+                          "chain": "solana",
+                          "network": "mainnet-beta",
+                          "digest": {
+                            "algorithm": "SHA3-512",
+                            "value": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+                          }
+                        },
+                        "memo": "majik-notary-v-1:e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657",
+                        "txSignature": "215zxATdvnR2NA1stTuNxAfmaqKvPTqjRPL8iEUJFUKz1R2k9aAaM8Y4ZAmPMAH2oPWRe5i8iAHNa7fiZE8qJmt3",
+                        "slot": 443938859,
+                        "blockTime": null,
+                        "confirmedAt": "2026-09-03T09:38:41.951Z",
+                        "status": "confirmed"
+                      }
+                    }
+                  },
+                  "submitted": {
+                    "summary": "Anchor submitted",
+                    "value": {
+                      "success": true,
+                      "message": "Anchor submitted successfully",
+                      "data": {
+                        "version": 1,
+                        "id": "2a2a70b9-6c9e-4e68-8b48-fdca2a27bb2e",
+                        "payload": {
+                          "chain": "solana",
+                          "network": "mainnet-beta",
+                          "digest": {
+                            "algorithm": "SHA3-512",
+                            "value": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+                          }
+                        },
+                        "memo": "majik-notary-v-1:e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657",
+                        "txSignature": null,
+                        "slot": null,
+                        "blockTime": null,
+                        "confirmedAt": null,
+                        "status": "pending"
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "sealHash is required",
+                  "code": "INVALID_REQUEST"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "402": {
-            "description": "No completed payment found for this seal hash (PAYMENT_REQUIRED)"
+            "description": "No completed payment found for this seal hash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": "No completed payment found for this seal hash — call POST /notary/v1/payment first with the same sealHash",
+                  "code": "PAYMENT_REQUIRED"
+                }
+              }
+            }
           },
           "503": {
-            "description": "Service temporarily unavailable due to fee payer balance"
+            "description": "Service temporarily unavailable due to fee-payer balance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Blockchain fee payer temporarily unavailable",
+                  "code": "FEE_PAYER_UNAVAILABLE"
+                }
+              }
+            }
           }
         }
       }
@@ -458,18 +1000,43 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "description": "Majikah notary anchor UUID.",
+            "example": "2a2a70b9-6c9e-4e68-8b48-fdca2a27bb2e",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Anchor confirmation status",
+            "description": "Anchor confirmation status retrieved.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotaryStatusResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Anchor status retrieved",
+                  "data": {
+                    "version": 1,
+                    "id": "2a2a70b9-6c9e-4e68-8b48-fdca2a27bb2e",
+                    "payload": {
+                      "chain": "solana",
+                      "network": "mainnet-beta",
+                      "digest": {
+                        "algorithm": "SHA3-512",
+                        "value": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+                      }
+                    },
+                    "memo": "majik-notary-v-1:e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657",
+                    "txSignature": "215zxATdvnR2NA1stTuNxAfmaqKvPTqjRPL8iEUJFUKz1R2k9aAaM8Y4ZAmPMAH2oPWRe5i8iAHNa7fiZE8qJmt3",
+                    "slot": 443938859,
+                    "blockTime": null,
+                    "confirmedAt": "2026-09-03T09:38:41.951Z",
+                    "status": "confirmed"
+                  }
                 }
               }
             }
@@ -489,26 +1056,110 @@
       "ApiKeyAuth": {
         "type": "apiKey",
         "in": "header",
-        "name": "x-api-key"
+        "name": "x-api-key",
+        "description": "Majikah API key supplied in the `x-api-key` HTTP header."
       }
     },
     "responses": {
       "Unauthorized": {
-        "description": "API Key missing or invalid",
+        "description": "API key missing or invalid.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "message": "API key missing or invalid",
+              "code": "UNAUTHORIZED"
             }
           }
         }
       },
       "NotFound": {
-        "description": "Requested resource was not found",
+        "description": "Requested resource was not found.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "message": "Requested resource was not found",
+              "code": "NOT_FOUND"
+            }
+          }
+        }
+      }
+    },
+    "examples": {
+      "MuidResponseExample": {
+        "summary": "Authenticated MUID response",
+        "value": {
+          "success": true,
+          "message": "MUID retrieved successfully",
+          "data": {
+            "id": "0000133e-8910-7918-84d0-c1e9173cde52",
+            "public_key": "YCIp+mQ3FkgI9J5guQqjdP6hDdtaOsMx8g/27kSuKB0=",
+            "hash": "652fc1796a624ec523b0dcdd5264d87aaceb9495a022fa9e201ee9dc4be9a8793a52144d3bf94b60ed1370f460ea703ca05893034f234637bdcec62357954626",
+            "timestamp": "2026-03-22T01:52:38.673Z",
+            "public_profile": {
+              "avatar_url": "https://pimg.majikah.solutions/example/profile.webp",
+              "display_name": "Zelijah",
+              "location_label": "Mandaluyong, Philippines",
+              "social_handles": {},
+              "preferred_language": "en"
+            },
+            "tier": "enhanced",
+            "status": "active",
+            "display_name": "Zelijah",
+            "signing_key": {
+              "fingerprint": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE=",
+              "ed_public_key": "2UlVEm3QRAzFm0ccTOTVa6bDxER4bQYjriVxdO7VmLg=",
+              "ml_dsa_public_key": "BASE64_ML_DSA_87_PUBLIC_KEY",
+              "registered_at": "2026-08-12T14:33:14.550Z"
+            },
+            "verification_stages": {
+              "id_verification": true,
+              "liveness": true,
+              "face_match": true,
+              "phone_verification": false,
+              "ip_analysis": true
+            },
+            "user_id": "3b538117-d6a9-4ffb-b917-12d037d9c38c",
+            "username": "thezelijah"
+          }
+        }
+      },
+      "TsaTimestampResponseExample": {
+        "summary": "Cached trusted timestamp response",
+        "value": {
+          "success": true,
+          "message": "Timestamp retrieved from cache",
+          "data": {
+            "version": 1,
+            "id": "a082c6ae-2e00-4d3d-9040-4927c6830fce",
+            "payload": {
+              "digest": {
+                "algorithm": "SHA-256",
+                "value": "7QJWn+ta/40GwU3SycVglWlFQpnyvwLiTxqh49913rg="
+              },
+              "nonce": "ETnKF2hNQZBSHGNWkNG4b1cVQUI4ILw5ZHLEC7bbE0E=",
+              "timestamp": "2026-09-13T05:05:00.094Z",
+              "tsa": {
+                "id": "tsa.majikah.solutions",
+                "signerFingerprint": "PTNvVMT2pCo48zcJRbrz5ybPTNCYlynuaI8exvz2EMM="
+              }
+            },
+            "signature": {
+              "version": 1,
+              "signerId": "PTNvVMT2pCo48zcJRbrz5ybPTNCYlynuaI8exvz2EMM=",
+              "signerEdPublicKey": "Nl4GAEQaQQ4jnCs46VyR/iJ/NzlL1kM47OPon8sLZjo=",
+              "signerMlDsaPublicKey": "BASE64_ML_DSA_87_PUBLIC_KEY",
+              "contentHash": "B1ItLVuczmnRxT51pTdZBA4wYLVMKvUoTR9swTNmGGc=",
+              "timestamp": "2026-09-13T05:05:00.094Z",
+              "edSignature": "GxFqvABU5/0HYEZuLBa3WgVikx313don76PdLXn1imwrs9QsflgsjlkaYOx+XtSklpteNl3xQ0kXCuIdJOXRBw==",
+              "mlDsaSignature": "BASE64_ML_DSA_87_SIGNATURE"
             }
           }
         }
@@ -517,339 +1168,1099 @@
     "schemas": {
       "ErrorResponse": {
         "type": "object",
+        "description": "Standard API error envelope. Some legacy endpoints may return `error` instead of `message`.",
         "properties": {
-          "success": { "type": "boolean", "example": false },
-          "message": { "type": "string" },
-          "code": { "type": "string" }
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "API key missing or invalid"
+          },
+          "error": {
+            "type": "string",
+            "example": "No completed payment found for this seal hash — call POST /notary/v1/payment first with the same sealHash"
+          },
+          "code": {
+            "type": "string",
+            "example": "UNAUTHORIZED"
+          }
         },
-        "required": ["success", "message"]
+        "required": ["success"],
+        "additionalProperties": true
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"],
+            "example": "ok"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix timestamp in milliseconds.",
+            "example": 1789401285446
+          }
+        },
+        "required": ["status", "timestamp"],
+        "additionalProperties": false
+      },
+      "PublicProfile": {
+        "type": "object",
+        "properties": {
+          "avatar_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "https://pimg.majikah.solutions/example/profile.webp"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Zelijah"
+          },
+          "location_label": {
+            "type": "string",
+            "example": "Mandaluyong, Philippines"
+          },
+          "social_handles": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "x": "thezelijah",
+              "instagram": "thezelijah"
+            }
+          },
+          "preferred_language": {
+            "type": "string",
+            "example": "en"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SigningKey": {
+        "type": "object",
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "description": "Public-key fingerprint.",
+            "example": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE="
+          },
+          "ed_public_key": {
+            "type": "string",
+            "description": "Base64-encoded Ed25519 public key.",
+            "example": "2UlVEm3QRAzFm0ccTOTVa6bDxER4bQYjriVxdO7VmLg="
+          },
+          "ml_dsa_public_key": {
+            "type": "string",
+            "description": "Base64-encoded ML-DSA public key.",
+            "example": "BASE64_ML_DSA_87_PUBLIC_KEY"
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-12T14:33:14.550Z"
+          }
+        },
+        "required": [
+          "fingerprint",
+          "ed_public_key",
+          "ml_dsa_public_key",
+          "registered_at"
+        ],
+        "additionalProperties": false
+      },
+      "VerificationStages": {
+        "type": "object",
+        "properties": {
+          "id_verification": {
+            "type": "boolean",
+            "example": true
+          },
+          "liveness": {
+            "type": "boolean",
+            "example": true
+          },
+          "face_match": {
+            "type": "boolean",
+            "example": true
+          },
+          "phone_verification": {
+            "type": "boolean",
+            "example": false
+          },
+          "ip_analysis": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "id_verification",
+          "liveness",
+          "face_match",
+          "phone_verification",
+          "ip_analysis"
+        ],
+        "additionalProperties": false
       },
       "MuidProfile": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "user_id": { "type": "string", "format": "uuid" },
-          "username": { "type": "string" },
-          "display_name": { "type": "string" },
-          "public_key": { "type": "string" },
-          "hash": { "type": "string" },
-          "status": { "type": "string" },
-          "tier": { "type": "string" },
-          "timestamp": { "type": "string", "format": "date-time" },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0000133e-8910-7918-84d0-c1e9173cde52"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3b538117-d6a9-4ffb-b917-12d037d9c38c"
+          },
+          "username": {
+            "type": "string",
+            "example": "thezelijah"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Zelijah"
+          },
+          "public_key": {
+            "type": "string",
+            "description": "Base64-encoded public identity key.",
+            "example": "YCIp+mQ3FkgI9J5guQqjdP6hDdtaOsMx8g/27kSuKB0="
+          },
+          "hash": {
+            "type": "string",
+            "description": "MUID content hash.",
+            "example": "652fc1796a624ec523b0dcdd5264d87aaceb9495a022fa9e201ee9dc4be9a8793a52144d3bf94b60ed1370f460ea703ca05893034f234637bdcec62357954626"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          },
+          "tier": {
+            "type": "string",
+            "example": "enhanced"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-22T01:52:38.673Z"
+          },
           "public_profile": {
-            "type": "object",
-            "properties": {
-              "avatar_url": { "type": "string", "format": "uri" },
-              "display_name": { "type": "string" },
-              "location_label": { "type": "string" },
-              "social_handles": { "type": "object" },
-              "preferred_language": { "type": "string" }
-            }
+            "$ref": "#/components/schemas/PublicProfile"
           },
           "signing_key": {
-            "type": "object",
-            "properties": {
-              "fingerprint": { "type": "string" },
-              "ed_public_key": { "type": "string" },
-              "ml_dsa_public_key": { "type": "string" },
-              "registered_at": { "type": "string", "format": "date-time" }
-            }
+            "$ref": "#/components/schemas/SigningKey"
           },
           "verification_stages": {
-            "type": "object",
-            "properties": {
-              "id_verification": { "type": "boolean" },
-              "liveness": { "type": "boolean" },
-              "face_match": { "type": "boolean" },
-              "phone_verification": { "type": "boolean" },
-              "ip_analysis": { "type": "boolean" }
-            }
+            "$ref": "#/components/schemas/VerificationStages"
           }
-        }
+        },
+        "required": [
+          "id",
+          "public_key",
+          "hash",
+          "timestamp",
+          "public_profile",
+          "tier",
+          "status",
+          "display_name",
+          "signing_key",
+          "verification_stages",
+          "user_id",
+          "username"
+        ],
+        "additionalProperties": false
       },
       "MuidResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/MuidProfile" }
-        }
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "MUID retrieved successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MuidProfile"
+          }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "MuidPublicLookupResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Public MUID profile retrieved successfully"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "muid": { "$ref": "#/components/schemas/MuidProfile" },
+              "muid": {
+                "$ref": "#/components/schemas/MuidProfile"
+              },
               "slinks": {
                 "type": "array",
-                "items": { "type": "object" }
+                "items": {
+                  "$ref": "#/components/schemas/SLinkObject"
+                }
               },
               "key_history": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "fingerprint": { "type": "string" },
-                    "bundle_hash": { "type": "string" },
-                    "status": { "type": "string" },
-                    "activated_at": { "type": "string", "format": "date-time" },
-                    "deactivated_at": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    }
-                  }
+                  "$ref": "#/components/schemas/MuidKeyHistoryItem"
                 }
               }
-            }
+            },
+            "required": ["muid", "slinks", "key_history"],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
+      },
+      "MuidKeyHistoryItem": {
+        "type": "object",
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "example": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE="
+          },
+          "bundle_hash": {
+            "type": "string",
+            "example": "sha256:bundle-hash"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          },
+          "activated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-12T14:33:14.550Z"
+          },
+          "deactivated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MajikSignatureEnvelope": {
+        "type": "object",
+        "description": "Simplified representation of a Majik Signature JSON envelope.",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 1
+          },
+          "signerId": {
+            "type": "string",
+            "example": "0000133e-8910-7918-84d0-c1e9173cde52"
+          },
+          "contentHash": {
+            "type": "string",
+            "example": "sha256:example-content-hash"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-13T05:05:00.094Z"
+          },
+          "edSignature": {
+            "type": "string",
+            "example": "BASE64_ED25519_SIGNATURE"
+          },
+          "mlDsaSignature": {
+            "type": "string",
+            "example": "BASE64_ML_DSA_87_SIGNATURE"
+          }
+        },
+        "required": ["version", "signerId"],
+        "additionalProperties": true
       },
       "MuidVerifyRequestBody": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
-            "description": "Optional MUID to verify against"
+            "description": "Optional MUID ID to verify against.",
+            "example": "0000133e-8910-7918-84d0-c1e9173cde52"
           },
           "signature": {
-            "type": "object",
-            "description": "MajikSignatureJSON object"
+            "$ref": "#/components/schemas/MajikSignatureEnvelope"
           }
         },
-        "required": ["signature"]
+        "required": ["signature"],
+        "additionalProperties": false
       },
       "MuidVerifyResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Signature verification completed"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "valid": { "type": "boolean" },
-              "trustLevel": { "type": "string" },
-              "reason": { "type": "string" },
-              "signerId": { "type": "string" },
-              "timestamp": { "type": "string", "format": "date-time" }
-            }
+              "valid": {
+                "type": "boolean",
+                "example": true
+              },
+              "trustLevel": {
+                "type": "string",
+                "example": "verified"
+              },
+              "reason": {
+                "type": "string",
+                "example": "Signature is valid and signer matches the requested MUID."
+              },
+              "signerId": {
+                "type": "string",
+                "example": "w1yD6xmDYUEPz+IDCMPB8kjWj3/Jofvcwl9gYDcDCeE="
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-09-13T05:05:00.094Z"
+              }
+            },
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
+      },
+      "Digest": {
+        "type": "object",
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "example": "SHA-256"
+          },
+          "value": {
+            "type": "string",
+            "description": "Base64 or algorithm-specific digest representation.",
+            "example": "7QJWn+ta/40GwU3SycVglWlFQpnyvwLiTxqh49913rg="
+          }
+        },
+        "required": ["value"],
+        "additionalProperties": false
       },
       "MajikTSARequest": {
         "type": "object",
         "properties": {
           "digest": {
-            "type": "object",
-            "properties": {
-              "algorithm": { "type": "string" },
-              "value": { "type": "string" }
-            },
-            "required": ["value"]
+            "$ref": "#/components/schemas/Digest"
           }
         },
-        "required": ["digest"]
+        "required": ["digest"],
+        "additionalProperties": false
+      },
+      "TsaPayload": {
+        "type": "object",
+        "properties": {
+          "digest": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "nonce": {
+            "type": "string",
+            "example": "ETnKF2hNQZBSHGNWkNG4b1cVQUI4ILw5ZHLEC7bbE0E="
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-13T05:05:00.094Z"
+          },
+          "tsa": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "tsa.majikah.solutions"
+              },
+              "signerFingerprint": {
+                "type": "string",
+                "example": "PTNvVMT2pCo48zcJRbrz5ybPTNCYlynuaI8exvz2EMM="
+              }
+            },
+            "required": ["id", "signerFingerprint"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["digest", "nonce", "timestamp", "tsa"],
+        "additionalProperties": false
+      },
+      "TsaSignature": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 1
+          },
+          "signerId": {
+            "type": "string",
+            "example": "PTNvVMT2pCo48zcJRbrz5ybPTNCYlynuaI8exvz2EMM="
+          },
+          "signerEdPublicKey": {
+            "type": "string",
+            "example": "Nl4GAEQaQQ4jnCs46VyR/iJ/NzlL1kM47OPon8sLZjo="
+          },
+          "signerMlDsaPublicKey": {
+            "type": "string",
+            "example": "BASE64_ML_DSA_87_PUBLIC_KEY"
+          },
+          "contentHash": {
+            "type": "string",
+            "example": "B1ItLVuczmnRxT51pTdZBA4wYLVMKvUoTR9swTNmGGc="
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-13T05:05:00.094Z"
+          },
+          "edSignature": {
+            "type": "string",
+            "example": "GxFqvABU5/0HYEZuLBa3WgVikx313don76PdLXn1imwrs9QsflgsjlkaYOx+XtSklpteNl3xQ0kXCuIdJOXRBw=="
+          },
+          "mlDsaSignature": {
+            "type": "string",
+            "example": "BASE64_ML_DSA_87_SIGNATURE"
+          }
+        },
+        "required": [
+          "version",
+          "signerId",
+          "signerEdPublicKey",
+          "signerMlDsaPublicKey",
+          "contentHash",
+          "timestamp",
+          "edSignature",
+          "mlDsaSignature"
+        ],
+        "additionalProperties": false
+      },
+      "TsaTimestampToken": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 1
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a082c6ae-2e00-4d3d-9040-4927c6830fce"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/TsaPayload"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/TsaSignature"
+          }
+        },
+        "required": ["version", "id", "payload", "signature"],
+        "additionalProperties": false
       },
       "TsaTimestampResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
-          "data": { "type": "object" }
-        }
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Timestamp retrieved from cache"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TsaTimestampToken"
+          }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "TsaQuotaResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Quota retrieved successfully"
+          },
           "data": {
             "type": "object",
             "properties": {
               "tsa_credits": {
                 "type": "object",
                 "properties": {
-                  "free_remaining": { "type": "integer" },
-                  "free_daily_limit": { "type": "integer" },
-                  "paid_credits": { "type": "integer" },
-                  "resets_at": { "type": "string", "format": "date-time" }
-                }
+                  "free_remaining": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
+                  },
+                  "free_daily_limit": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
+                  },
+                  "paid_credits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 143
+                  },
+                  "resets_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-09-14T00:00:00.000Z"
+                  }
+                },
+                "required": [
+                  "free_remaining",
+                  "free_daily_limit",
+                  "paid_credits",
+                  "resets_at"
+                ],
+                "additionalProperties": false
               }
-            }
+            },
+            "required": ["tsa_credits"],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "SLinkSignature": {
         "type": "object",
         "properties": {
-          "v": { "type": "integer" },
-          "signerId": { "type": "string" },
-          "timestamp": { "type": "string", "format": "date-time" },
-          "contentHash": { "type": "string" },
-          "contentType": { "type": "string" },
-          "edSignature": { "type": "string" },
-          "mlDsaSignature": { "type": "string" }
-        }
+          "v": {
+            "type": "integer",
+            "example": 1
+          },
+          "signerId": {
+            "type": "string",
+            "example": "0000133e-8910-7918-84d0-c1e9173cde52"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-13T05:05:00.094Z"
+          },
+          "contentHash": {
+            "type": "string",
+            "example": "sha256:example-content-hash"
+          },
+          "contentType": {
+            "type": "string",
+            "example": "text/html"
+          },
+          "edSignature": {
+            "type": "string",
+            "example": "BASE64_ED25519_SIGNATURE"
+          },
+          "mlDsaSignature": {
+            "type": "string",
+            "example": "BASE64_ML_DSA_87_SIGNATURE"
+          }
+        },
+        "required": ["v", "signerId", "timestamp", "contentHash"],
+        "additionalProperties": false
       },
       "SLinkObject": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "user_id": { "type": "string", "format": "uuid" },
-          "domain": { "type": "string" },
-          "subdomain": { "type": "string" },
-          "path": { "type": "string" },
-          "url": { "type": "string", "format": "uri" },
-          "hash": { "type": "string" },
-          "v_code": { "type": "string" },
-          "source": { "type": "string" },
-          "status": { "type": "string" },
-          "timestamp": { "type": "string", "format": "date-time" },
-          "verified_at": { "type": "string", "nullable": true },
-          "signature": { "$ref": "#/components/schemas/SLinkSignature" },
-          "muid": { "type": "string", "format": "uuid" },
-          "version": { "type": "integer" },
-          "claim_type": { "type": "string" },
-          "verification_method": { "type": "string", "nullable": true }
-        }
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3b538117-d6a9-4ffb-b917-12d037d9c38c"
+          },
+          "domain": {
+            "type": "string",
+            "example": "example.com"
+          },
+          "subdomain": {
+            "type": "string",
+            "example": ""
+          },
+          "path": {
+            "type": "string",
+            "example": "/articles/example"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/articles/example"
+          },
+          "hash": {
+            "type": "string",
+            "example": "sha256:example-content-hash"
+          },
+          "v_code": {
+            "type": "string",
+            "example": "MJKS-7X3P9"
+          },
+          "source": {
+            "type": "string",
+            "example": "api"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-13T05:05:01.000Z"
+          },
+          "verified_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2026-09-13T05:05:02.000Z"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/SLinkSignature"
+          },
+          "muid": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0000133e-8910-7918-84d0-c1e9173cde52"
+          },
+          "version": {
+            "type": "integer",
+            "example": 1
+          },
+          "claim_type": {
+            "type": "string",
+            "example": "url"
+          },
+          "verification_method": {
+            "type": "string",
+            "nullable": true,
+            "example": "dns_html"
+          }
+        },
+        "required": ["id", "url", "hash", "status", "timestamp", "version"],
+        "additionalProperties": false
       },
       "SLinkPayload": {
         "type": "object",
         "properties": {
-          "url": { "type": "string", "format": "uri" },
-          "domain": { "type": "string" },
-          "hash": { "type": "string" },
-          "user_id": { "type": "string", "format": "uuid" },
-          "signature": { "$ref": "#/components/schemas/SLinkSignature" }
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/articles/example"
+          },
+          "domain": {
+            "type": "string",
+            "example": "example.com"
+          },
+          "hash": {
+            "type": "string",
+            "example": "sha256:example-content-hash"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3b538117-d6a9-4ffb-b917-12d037d9c38c"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/SLinkSignature"
+          }
         },
-        "required": ["signature", "user_id"]
+        "required": ["signature", "user_id"],
+        "additionalProperties": false
       },
       "SLinkSingleResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/SLinkObject" }
-        }
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "SLink created successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SLinkObject"
+          }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "SLinkPublicViewResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "SLink retrieved successfully"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "slink": { "$ref": "#/components/schemas/SLinkObject" },
-              "muid": { "$ref": "#/components/schemas/MuidProfile" }
-            }
+              "slink": {
+                "$ref": "#/components/schemas/SLinkObject"
+              },
+              "muid": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "tier": {
+                    "type": "string"
+                  },
+                  "public_key": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "required": ["slink", "muid"],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "SLinkListResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "SLinks retrieved successfully"
+          },
           "data": {
             "type": "object",
             "properties": {
               "items": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/SLinkObject" }
+                "items": {
+                  "$ref": "#/components/schemas/SLinkObject"
+                }
               },
-              "next_cursor": { "type": "string", "nullable": true },
-              "has_more": { "type": "boolean" }
-            }
+              "next_cursor": {
+                "type": "string",
+                "nullable": true,
+                "example": "eyJwYWdlIjoyfQ=="
+              },
+              "has_more": {
+                "type": "boolean",
+                "example": false
+              }
+            },
+            "required": ["items", "next_cursor", "has_more"],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "SLinkSearchResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "SLink search completed"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "hash": { "type": "string" },
+              "hash": {
+                "type": "string",
+                "example": "sha256:example-content-hash"
+              },
               "matches": {
                 "type": "array",
-                "items": { "type": "object" }
+                "items": {
+                  "$ref": "#/components/schemas/SLinkObject"
+                }
               },
-              "count": { "type": "integer" }
-            }
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 1
+              }
+            },
+            "required": ["hash", "matches", "count"],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "SLinkDeleteResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "SLink deleted successfully"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "id": { "type": "string", "format": "uuid" }
-            }
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "5cccf89a-4b61-4f6f-8a6d-01b7a6cb2f71"
+              }
+            },
+            "required": ["id"],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
+      },
+      "NotarySealHashRequest": {
+        "type": "object",
+        "properties": {
+          "sealHash": {
+            "type": "string",
+            "description": "SHA3-512 document seal hash used as the immutable anchoring identifier.",
+            "minLength": 1,
+            "example": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+          }
+        },
+        "required": ["sealHash"],
+        "additionalProperties": false
+      },
+      "NotaryDigest": {
+        "type": "object",
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "enum": ["SHA3-512"],
+            "example": "SHA3-512"
+          },
+          "value": {
+            "type": "string",
+            "example": "e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+          }
+        },
+        "required": ["algorithm", "value"],
+        "additionalProperties": false
+      },
+      "MajikChainAnchorPayload": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "enum": ["solana"],
+            "example": "solana"
+          },
+          "network": {
+            "type": "string",
+            "enum": ["mainnet-beta"],
+            "example": "mainnet-beta"
+          },
+          "digest": {
+            "$ref": "#/components/schemas/NotaryDigest"
+          }
+        },
+        "required": ["chain", "network", "digest"],
+        "additionalProperties": false
       },
       "MajikChainAnchor": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "confirmed", "finalized", "failed"]
+          "version": {
+            "type": "integer",
+            "example": 1
           },
-          "sealHash": { "type": "string" },
-          "txHash": { "type": "string", "nullable": true },
-          "slot": { "type": "integer", "nullable": true },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "2a2a70b9-6c9e-4e68-8b48-fdca2a27bb2e"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/MajikChainAnchorPayload"
+          },
+          "memo": {
+            "type": "string",
+            "example": "majik-notary-v-1:e07ab14bab14cf9e7f172851d9e2fe71a72e4c1333690c1acc5fe5cfe89b959e78c8888609a310a55c01bd5b5e26197daa362981d027cb6972615ce601266657"
+          },
+          "txSignature": {
+            "type": "string",
+            "nullable": true,
+            "example": "215zxATdvnR2NA1stTuNxAfmaqKvPTqjRPL8iEUJFUKz1R2k9aAaM8Y4ZAmPMAH2oPWRe5i8iAHNa7fiZE8qJmt3"
+          },
+          "slot": {
+            "type": "integer",
+            "nullable": true,
+            "example": 443938859
+          },
+          "blockTime": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "description": "Solana block time as Unix seconds when available.",
+            "example": 1788428321
+          },
           "confirmedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "example": "2026-09-03T09:38:41.951Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "confirmed", "finalized", "failed"],
+            "example": "confirmed"
           }
-        }
+        },
+        "required": [
+          "version",
+          "id",
+          "payload",
+          "memo",
+          "txSignature",
+          "slot",
+          "blockTime",
+          "confirmedAt",
+          "status"
+        ],
+        "additionalProperties": false
       },
       "NotaryPaymentResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Payment intent created — anchor will process once payment confirms"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "anchor": { "$ref": "#/components/schemas/MajikChainAnchor" },
-              "order_id": { "type": "string" },
-              "checkout_url": { "type": "string", "format": "uri" },
-              "amount_cents": { "type": "integer" },
-              "currency": { "type": "string" },
-              "expires_at": { "type": "string", "format": "date-time" }
-            }
+              "anchor": {
+                "$ref": "#/components/schemas/MajikChainAnchor"
+              },
+              "order_id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "095ecd32-ac95-481d-85f9-acee53a5752a"
+              },
+              "checkout_url": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://pay.example.com/checkout/095ecd32-ac95-481d-85f9-acee53a5752a"
+              },
+              "amount_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 5676
+              },
+              "currency": {
+                "type": "string",
+                "example": "PHP"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-09-14T16:29:18.445Z"
+              }
+            },
+            "additionalProperties": false
           }
-        }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "NotaryRegisterResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/MajikChainAnchor" }
-        }
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Anchor already exists"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MajikChainAnchor"
+          }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       },
       "NotaryStatusResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string" },
-          "data": { "$ref": "#/components/schemas/MajikChainAnchor" }
-        }
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Anchor status retrieved"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MajikChainAnchor"
+          }
+        },
+        "required": ["success", "message", "data"],
+        "additionalProperties": false
       }
     }
   }
