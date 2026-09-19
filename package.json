@@ -53,15 +53,15 @@
     "test:muid": "npx vitest test/sdk-muid.test.ts"
   },
   "dependencies": {
-    "@majikah/majik-key": "^0.4.0",
-    "@majikah/majik-notary": "^0.1.0",
-    "@majikah/majik-signature": "^0.4.1",
-    "@majikah/majik-slink": "^0.2.1",
-    "@majikah/majik-universal-id": "^0.3.0"
+    "@majikah/majik-key": "^0.5.2",
+    "@majikah/majik-notary": "^0.1.1",
+    "@majikah/majik-signature": "^0.6.0",
+    "@majikah/majik-slink": "^0.2.3",
+    "@majikah/majik-universal-id": "^0.4.0"
   },
   "devDependencies": {
-    "@types/node": "^26.5.1",
-    "dotenv": "^17.4.2",
+    "@types/node": "^26.6.2",
+    "dotenv": "^18.0.1",
     "typedoc": "^0.28.20",
     "vitest": "^5.0.1"
   }
