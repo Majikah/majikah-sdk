@@ -1,7 +1,7 @@
 {
   "name": "@majikah/sdk",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Official TypeScript client SDK for the Majikah ecosystem, providing unified access to Majik Universal ID (MUID) identity verification, Time Stamping Authority (TSA) issuing, cryptographically signed link claims (SLink), and on-chain document notarization flows.",
   "license": "Apache-2.0",
   "author": "Majikah Solutions OPC",
