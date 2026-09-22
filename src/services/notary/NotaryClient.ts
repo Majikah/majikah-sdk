@@ -5,7 +5,7 @@ import {
   type MajikChainAnchor,
 } from "@majikah/majik-signature";
 
-import type { HttpClient } from "../../transport/HttpClient";
+import { HttpClient } from "../../transport/HttpClient";
 import { APIError } from "../../errors/APIError";
 import { MajikahError } from "../../errors/MajikahError";
 import { assertNonEmpty } from "../shared/validation";
@@ -16,7 +16,8 @@ import type {
   NotaryPaymentResult,
   PollOptions,
   SignSealOptions,
-} from "../../types/notary";
+  MajikahClientOptions,
+} from "../../types";
 import { validateSealHash } from "./validation";
 import { normalizeToBlob } from "../shared/encoding";
 
@@ -41,6 +42,37 @@ export class NotaryClient {
    * @param http HTTP client used to communicate with the Majikah API.
    */
   constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Initializes a standalone Notary client with its own HTTP transport.
+   *
+   * This is a convenience method for applications that only require file
+   * notarization and on-chain anchoring functionality. It automatically
+   * provisions the underlying `HttpClient` so you do not have to compose
+   * the transport layer manually.
+   *
+   * By using this initialization method along with subpath exports, you can
+   * completely bypass the root `MajikahSDKClient` and safely tree-shake
+   * unused cryptographic dependencies from your bundle.
+   *
+   * @param options SDK configuration and transport options (e.g., API key, base URL, retries).
+   * @returns A fully configured `NotaryClient` instance.
+   *
+   * @example
+   * ```ts
+   * import { NotaryClient } from "@majikah/sdk/notary";
+   *
+   * const notary = NotaryClient.init({
+   *   apiKey: process.env.MAJIKAH_API_KEY!,
+   * });
+   *
+   * const anchor = await notary.status("anchor-123");
+   * ```
+   */
+  static init(options: MajikahClientOptions): NotaryClient {
+    const http = new HttpClient(options);
+    return new NotaryClient(http);
+  }
 
   /**
    * Creates or resumes payment for a sealed document.

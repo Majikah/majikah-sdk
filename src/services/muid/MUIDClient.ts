@@ -5,7 +5,7 @@ import {
   type FileLike,
 } from "@majikah/majik-signature";
 
-import type { HttpClient } from "../../transport/HttpClient";
+import { HttpClient } from "../../transport/HttpClient";
 import { ValidationError } from "../../errors/ValidationError";
 import { resolveTargetSignature } from "../shared/resolve-signature";
 import type {
@@ -15,7 +15,8 @@ import type {
   MuidVerifyResult,
   VerifyFileDetachedOptions,
   VerifyFileOptions,
-} from "../../types/muid";
+  MajikahClientOptions,
+} from "../../types";
 
 const NO_SIGNATURE_HINT =
   "Sign the file first via @majikah/majik-signature before verifying it against a MUID.";
@@ -33,6 +34,37 @@ export class MUIDClient {
    * @param http HTTP client used to communicate with the Majikah API.
    */
   constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Initializes a standalone MUID client with its own HTTP transport.
+   *
+   * This is a convenience method for applications that only require identity
+   * lookups and signature verification functionality. It automatically
+   * provisions the underlying `HttpClient` so you do not have to compose
+   * the transport layer manually.
+   *
+   * By using this initialization method along with subpath exports, you can
+   * completely bypass the root `MajikahSDKClient` and safely tree-shake
+   * unused cryptographic dependencies from your bundle.
+   *
+   * @param options SDK configuration and transport options (e.g., API key, base URL, retries).
+   * @returns A fully configured `MUIDClient` instance.
+   *
+   * @example
+   * ```ts
+   * import { MUIDClient } from "@majikah/sdk/muid";
+   *
+   * const muidClient = MUIDClient.init({
+   *   apiKey: process.env.MAJIKAH_API_KEY!,
+   * });
+   *
+   * const profile = await muidClient.lookup("alice");
+   * ```
+   */
+  static init(options: MajikahClientOptions): MUIDClient {
+    const http = new HttpClient(options);
+    return new MUIDClient(http);
+  }
 
   /**
    * Returns the MUID associated with the current API credentials.

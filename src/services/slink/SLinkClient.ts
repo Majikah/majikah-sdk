@@ -1,16 +1,19 @@
 import type { MajikKey } from "@majikah/majik-key";
 import { MajikSLink, type MajikSLinkJSON } from "@majikah/majik-slink";
 
-import type { HttpClient } from "../../transport/HttpClient";
+import { HttpClient } from "../../transport/HttpClient";
 import { ValidationError } from "../../errors/ValidationError";
-import type { PageResult, PaginationParams } from "../../types/common";
 import type {
+  MajikahClientOptions,
+  PageResult,
+  PaginationParams,
   PublicKeyResolver,
   RegisterUrlOptions,
   SLinkPublicView,
   SLinkSearchResult,
   VerifiedSLinkMatch,
-} from "../../types/slink";
+} from "../../types";
+
 import { normalizeUrl } from "./validation";
 import { assertNonEmpty } from "../shared/validation";
 
@@ -29,6 +32,37 @@ export class SLinkClient {
    * @param http HTTP client used to communicate with the Majikah API.
    */
   constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Initializes a standalone SLink client with its own HTTP transport.
+   *
+   * This is a convenience method for applications that only require SLink
+   * creation, registration, and verification functionality. It automatically
+   * provisions the underlying `HttpClient` so you do not have to compose
+   * the transport layer manually.
+   *
+   * By using this initialization method along with subpath exports, you can
+   * completely bypass the root `MajikahSDKClient` and safely tree-shake
+   * unused cryptographic dependencies from your bundle.
+   *
+   * @param options SDK configuration and transport options (e.g., API key, base URL, retries).
+   * @returns A fully configured `SLinkClient` instance.
+   *
+   * @example
+   * ```ts
+   * import { SLinkClient } from "@majikah/sdk/slink";
+   *
+   * const slink = SLinkClient.init({
+   *   apiKey: process.env.MAJIKAH_API_KEY!,
+   * });
+   *
+   * const results = await slink.verifyUrl("example.com");
+   * ```
+   */
+  static init(options: MajikahClientOptions): SLinkClient {
+    const http = new HttpClient(options);
+    return new SLinkClient(http);
+  }
 
   /**
    * Registers an SLink that has already been created and signed.

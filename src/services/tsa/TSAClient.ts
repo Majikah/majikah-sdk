@@ -7,7 +7,7 @@ import {
   type MajikSignatureJSON,
 } from "@majikah/majik-signature";
 
-import type { HttpClient } from "../../transport/HttpClient";
+import { HttpClient } from "../../transport/HttpClient";
 import { ValidationError } from "../../errors/ValidationError";
 import type {
   MajikTimestamp,
@@ -20,7 +20,8 @@ import type {
   TimestampExistingDetachedResult,
   TimestampExistingOptions,
   TimestampExistingResult,
-} from "../../types/tsa";
+  MajikahClientOptions,
+} from "../../types";
 import { validateTSARequest } from "./validation";
 import { resolveTargetSignature } from "../shared/resolve-signature";
 
@@ -39,6 +40,37 @@ export class TSAClient {
    * @param http HTTP client used to communicate with the Majikah API.
    */
   constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Initializes a standalone TSA client with its own HTTP transport.
+   *
+   * This is a convenience method for applications that only require trusted
+   * timestamping functionality. It automatically provisions the underlying
+   * `HttpClient` so you do not have to compose the transport layer manually.
+   *
+   * By using this initialization method along with subpath exports, you can
+   * completely bypass the root `MajikahSDKClient` and safely tree-shake
+   * unused cryptographic dependencies (like Notary or SLink) from your bundle.
+   *
+   * @param options SDK configuration and transport options (e.g., API key, base URL, retries).
+   * @returns A fully configured `TSAClient` instance.
+   *
+   * @example
+   * ```ts
+   * import { TSAClient } from "@majikah/sdk/tsa";
+   *
+   * const tsa = TSAClient.init({
+   *   apiKey: process.env.MAJIKAH_API_KEY!,
+   *   timeoutMs: 15_000,
+   * });
+   *
+   * const { tsa_credits } = await tsa.quota();
+   * ```
+   */
+  static init(options: MajikahClientOptions): TSAClient {
+    const http = new HttpClient(options);
+    return new TSAClient(http);
+  }
 
   /**
    * Issues a trusted timestamp request for a TSA payload.

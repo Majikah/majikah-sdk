@@ -55,14 +55,49 @@
   "dependencies": {
     "@majikah/majik-key": "^0.5.2",
     "@majikah/majik-notary": "^0.1.1",
-    "@majikah/majik-signature": "^0.6.0",
+    "@majikah/majik-signature": "^0.7.0",
     "@majikah/majik-slink": "^0.2.3",
     "@majikah/majik-universal-id": "^0.4.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
-    "dotenv": "^18.0.1",
+    "dotenv": "^18.0.3",
     "typedoc": "^0.28.20",
     "vitest": "^5.0.1"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tsa": {
+      "types": "./dist/services/tsa/TSAClient.d.ts",
+      "import": "./dist/services/tsa/TSAClient.js"
+    },
+    "./muid": {
+      "types": "./dist/services/muid/MUIDClient.d.ts",
+      "import": "./dist/services/muid/MUIDClient.js"
+    },
+    "./slink": {
+      "types": "./dist/services/slink/SLinkClient.d.ts",
+      "import": "./dist/services/slink/SLinkClient.js"
+    },
+    "./notary": {
+      "types": "./dist/services/notary/NotaryClient.d.ts",
+      "import": "./dist/services/notary/NotaryClient.js"
+    },
+    "./transport": {
+      "types": "./dist/transport/HttpClient.d.ts",
+      "import": "./dist/transport/HttpClient.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    }
   }
 }
