@@ -206,6 +206,7 @@ const majikah = new MajikahSDKClient({
 });
 ```
 
+
 ### Configuration options
 
 | Option      | Description                                 | Default                                |
@@ -244,6 +245,64 @@ const majikah = new MajikahSDKClient({
 ```
 
 Services not explicitly overridden inherit the fallback version.
+
+---
+
+## Standalone Service Clients & Tree-Shaking
+
+If your application only requires a specific Majikah service rather than the full ecosystem, you can instantiate any service client directly using its static `init` method. 
+
+This approach automatically provisions the underlying `HttpClient` using the supplied configuration, allowing you to bypass the root `MajikahSDKClient` and safely tree-shake unused service logic and heavy cryptographic dependencies from your production bundle.
+
+### TSA Client Standalone
+
+```ts
+import { TSAClient } from "@majikah/sdk/tsa";
+
+const tsa = TSAClient.init({
+  apiKey: process.env.MAJIKAH_API_KEY!,
+  timeoutMs: 15_000,
+});
+
+const quota = await tsa.quota();
+```
+
+### Notary Client Standalone
+
+```ts
+import { NotaryClient } from "@majikah/sdk/notary";
+
+const notary = NotaryClient.init({
+  apiKey: process.env.MAJIKAH_API_KEY!,
+});
+
+const anchor = await notary.status("anchor-123");
+```
+
+### SLink Client Standalone
+
+```ts
+import { SLinkClient } from "@majikah/sdk/slink";
+
+const slink = SLinkClient.init({
+  apiKey: process.env.MAJIKAH_API_KEY!,
+});
+
+const results = await slink.verifyUrl("example.com");
+```
+
+### MUID Client Standalone
+
+```ts
+import { MUIDClient } from "@majikah/sdk/muid";
+
+const muidClient = MUIDClient.init({
+  apiKey: process.env.MAJIKAH_API_KEY!,
+});
+
+const profile = await muidClient.lookup("alice");
+```
+
 
 ---
 
