@@ -55,10 +55,10 @@
   },
   "dependencies": {
     "@majikah/majik-key": "^1.0.2",
-    "@majikah/majik-notary": "^0.2.1",
-    "@majikah/majik-signature": "^0.9.4",
-    "@majikah/majik-slink": "^0.3.0",
-    "@majikah/majik-universal-id": "^0.6.0"
+    "@majikah/majik-notary": "^0.3.0",
+    "@majikah/majik-signature": "^0.10.0",
+    "@majikah/majik-slink": "^0.4.0",
+    "@majikah/majik-universal-id": "^0.7.0"
   },
   "devDependencies": {
     "@solana/kit": "^8.4.0",
