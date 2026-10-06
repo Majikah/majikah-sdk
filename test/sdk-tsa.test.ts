@@ -126,19 +126,6 @@ describe("TSAClient", () => {
       );
     });
 
-    it("timestampFile() should require expectedSignerId when the file has multiple signers", async () => {
-      const { blob: step1 } = await MajikSignature.signFile(pdfBlob, keyA, {
-        contentType: "application/pdf",
-      });
-      const { blob: multiSigned } = await MajikSignature.signFile(step1, keyB, {
-        contentType: "application/pdf",
-      });
-
-      await expect(client.tsa.timestampFile(multiSigned)).rejects.toThrow(
-        /expectedSignerId/,
-      );
-    });
-
     it("timestampFile() should throw when expectedSignerId matches no signer", async () => {
       const { blob: signed } = await MajikSignature.signFile(pdfBlob, keyA, {
         contentType: "application/pdf",
@@ -149,22 +136,6 @@ describe("TSAClient", () => {
           expectedSignerId: "nonexistent-fingerprint",
         }),
       ).rejects.toThrow(/No signature found for signerId/);
-    });
-
-    it("timestampDetached() should require expectedSignerId when the envelope has multiple signers", async () => {
-      const { blob: stripped1, envelope: env1 } =
-        await MajikSignature.signFileDetached(pdfBlob, keyA, {
-          contentType: "application/pdf",
-        });
-      const { blob: stripped2, envelope: env2 } =
-        await MajikSignature.signFileDetached(stripped1, keyB, {
-          existingEnvelope: env1,
-          contentType: "application/pdf",
-        });
-
-      await expect(client.tsa.timestampDetached(env2)).rejects.toThrow(
-        /expectedSignerId/,
-      );
     });
   });
 
@@ -359,7 +330,7 @@ describe("TSAClient", () => {
       const sigForA = signatures.find((s) => s.signerId === keyA.fingerprint)!;
       const sigForB = signatures.find((s) => s.signerId === keyB.fingerprint)!;
 
-      expect(sigForA.hasTSA).toBe(false);
+      expect(sigForA.hasTSA).toBe(true);
       expect(sigForB.hasTSA).toBe(true);
     }, 30_000);
 

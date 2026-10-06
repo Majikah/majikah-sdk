@@ -8,6 +8,7 @@ import {
 import { HttpClient } from "../../transport/HttpClient";
 import { ValidationError } from "../../errors/ValidationError";
 import { resolveTargetSignature } from "../shared/resolve-signature";
+
 import type {
   MajikIDPublicView,
   MuidPublicLookupResult,
@@ -22,44 +23,65 @@ const NO_SIGNATURE_HINT =
   "Sign the file first via @majikah/majik-signature before verifying it against a MUID.";
 
 /**
- * Client for interacting with the Majik Universal ID (MUID) API.
+ * Normalize an optional user-supplied string identifier.
  *
- * Provides direct MUID API operations as well as convenience methods for
- * verifying signatures embedded in files or stored in detached envelopes.
+ * `undefined` means "not supplied" and is preserved.
+ * Any supplied value must be a non-empty string after trimming.
+ */
+function normalizeOptionalIdentifier(
+  value: unknown,
+  field: string,
+): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    throw new ValidationError(
+      `${field} must be a non-empty string when provided.`,
+      value,
+    );
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    throw new ValidationError(
+      `${field} must be a non-empty string when provided.`,
+      value,
+    );
+  }
+
+  return normalized;
+}
+
+/**
+ * Client for the Majik Universal ID (MUID) API.
+ *
+ * MUID provides:
+ * - public identity lookup
+ * - authenticated identity lookup
+ * - server-side signature verification
+ * - embedded-file signature verification
+ * - detached-envelope signature verification
+ *
+ * Important semantic distinction:
+ *
+ * `expectedSignerId`
+ *   Selects which signature inside a multi-signature artifact should be
+ *   examined.
+ *
+ * `muid`
+ *   Identifies which MUID the selected signer must belong to.
+ *
+ * The client never treats `expectedSignerId` as proof of MUID ownership.
+ * That binding is performed by the MUID service.
  */
 export class MUIDClient {
-  /**
-   * Creates a MUID client using the provided HTTP transport.
-   *
-   * @param http HTTP client used to communicate with the Majikah API.
-   */
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * Initializes a standalone MUID client with its own HTTP transport.
-   *
-   * This is a convenience method for applications that only require identity
-   * lookups and signature verification functionality. It automatically
-   * provisions the underlying `HttpClient` so you do not have to compose
-   * the transport layer manually.
-   *
-   * By using this initialization method along with subpath exports, you can
-   * completely bypass the root `MajikahSDKClient` and safely tree-shake
-   * unused cryptographic dependencies from your bundle.
-   *
-   * @param options SDK configuration and transport options (e.g., API key, base URL, retries).
-   * @returns A fully configured `MUIDClient` instance.
-   *
-   * @example
-   * ```ts
-   * import { MUIDClient } from "@majikah/sdk/muid";
-   *
-   * const muidClient = MUIDClient.init({
-   *   apiKey: process.env.MAJIKAH_API_KEY!,
-   * });
-   *
-   * const profile = await muidClient.lookup("alice");
-   * ```
+   * Initialize a standalone MUID client.
    */
   static init(options: MajikahClientOptions): MUIDClient {
     const http = new HttpClient(options);
@@ -67,9 +89,7 @@ export class MUIDClient {
   }
 
   /**
-   * Returns the MUID associated with the current API credentials.
-   *
-   * @returns Public identity information for the authenticated MUID.
+   * Return the MUID associated with the current API credentials.
    */
   async me(): Promise<MajikIDPublicView> {
     return this.http.request<MajikIDPublicView>("muid", "/me", {
@@ -78,136 +98,169 @@ export class MUIDClient {
   }
 
   /**
-   * Verifies a signature against a MUID.
+   * Verify a signature envelope through the MUID gateway.
    *
-   * @param body Signature verification request containing the signature and
-   * optional MUID identifier.
-   * @returns The result of the MUID verification.
-   * @throws ValidationError When no signature is provided.
+   * When `body.id` is supplied, the gateway must verify that the signer
+   * belongs to that requested MUID.
+   *
+   * When `body.id` is omitted, the request preserves the API contract and
+   * delegates the gateway's default verification behavior.
    */
   async verify(body: MuidVerifyRequestBody): Promise<MuidVerifyResult> {
-    if (!body?.signature) {
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !body.signature
+    ) {
       throw new ValidationError("signature is required", body);
     }
 
+    const id = normalizeOptionalIdentifier(body.id, "id");
+
+    const requestBody: MuidVerifyRequestBody = {
+      signature: body.signature,
+      ...(id !== undefined ? { id } : {}),
+    };
+
     return this.http.request<MuidVerifyResult>("muid", "/verify", {
       method: "POST",
-      body,
+      body: requestBody,
     });
   }
 
   /**
-   * Looks up the public MUID associated with an ID or username.
-   *
-   * @param idOrUsername MUID ID or username to look up.
-   * @returns Public MUID information.
-   * @throws ValidationError When the identifier is empty.
+   * Look up a public MUID by ID or username.
    */
   async lookup(idOrUsername: string): Promise<MuidPublicLookupResult> {
-    if (!idOrUsername) {
-      throw new ValidationError("id or username is required", idOrUsername);
+    const identifier = normalizeOptionalIdentifier(
+      idOrUsername,
+      "id or username",
+    );
+
+    // normalizeOptionalIdentifier only returns undefined for undefined,
+    // while this method's type requires an identifier.
+    if (identifier === undefined) {
+      throw new ValidationError(
+        "id or username is required",
+        idOrUsername,
+      );
     }
 
     return this.http.request<MuidPublicLookupResult>(
       "muid",
-      `/${encodeURIComponent(idOrUsername)}/public`,
-      { method: "GET" },
+      `/${encodeURIComponent(identifier)}/public`,
+      {
+        method: "GET",
+      },
     );
   }
 
   /**
-   * Verifies a signature embedded in a file against a MUID.
+   * Verify a selected signature against an optional MUID.
    *
-   * The file must already contain a Majik Signature. No signing key is
-   * required because this method only extracts and verifies an existing
-   * signature.
+   * The selected signature is already structurally resolved locally.
+   * MUID ownership remains a gateway-side trust decision.
+   */
+  private verifySelectedSignature(
+    signature: MajikSignature,
+    muid?: string,
+  ): Promise<MuidVerifyResult> {
+    const normalizedMuid = normalizeOptionalIdentifier(muid, "muid");
+
+    const body: MuidVerifyRequestBody = {
+      signature: signature.toJSON(),
+      ...(normalizedMuid !== undefined
+        ? { id: normalizedMuid }
+        : {}),
+    };
+
+    return this.verify(body);
+  }
+
+  /**
+   * Verify an embedded signature from a file.
    *
-   * When the file contains exactly one signature, it is selected
-   * automatically. Multi-signature files require `expectedSignerId` to
-   * explicitly select the signature being verified.
+   * Selection semantics:
    *
-   * @param file File containing an embedded Majik Signature.
-   * @param options Optional signer, MUID, and MIME type settings.
-   * @returns The result of the MUID verification.
-   * @throws ValidationError When the file contains no signatures or a
-   * requested signer cannot be resolved.
+   * - 0 signatures -> ValidationError
+   * - 1 signature -> automatically selected
+   * - >1 signatures -> expectedSignerId is required
    *
-   * @example
-   * ```ts
-   * const result = await majikah.muid.verifyFile(file);
-   * ```
+   * Identity semantics:
    *
-   * @example
-   * ```ts
-   * const result = await majikah.muid.verifyFile(file, {
-   *   expectedSignerId: bobFingerprint,
-   *   muid: "bob",
-   * });
-   * ```
+   * - muid omitted -> gateway default behavior
+   * - muid supplied -> selected signer must belong to that MUID
    */
   async verifyFile(
     file: FileLike,
     options?: VerifyFileOptions,
   ): Promise<MuidVerifyResult> {
+    const expectedSignerId = normalizeOptionalIdentifier(
+      options?.expectedSignerId,
+      "expectedSignerId",
+    );
+
+    const muid = normalizeOptionalIdentifier(
+      options?.muid,
+      "muid",
+    );
+
     const signatures = await MajikSignature.extractFrom(file, {
       mimeType: options?.mimeType,
     });
 
     const target = resolveTargetSignature(
       signatures,
-      options?.expectedSignerId,
+      expectedSignerId,
       {
         noSignatureHint: NO_SIGNATURE_HINT,
       },
     );
 
-    return this.verify({
-      id: options?.muid,
-      signature: target.toJSON(),
-    });
+    return this.verifySelectedSignature(target, muid);
   }
 
   /**
-   * Verifies a signature contained in a detached envelope against a MUID.
+   * Verify a detached signature envelope.
    *
-   * The envelope supplies the signature and its content hash. The actual
-   * content verification is performed server-side.
+   * Selection semantics:
    *
-   * When the envelope contains exactly one signature, it is selected
-   * automatically. Multi-signature envelopes require `expectedSignerId`.
+   * - 0 signatures -> ValidationError
+   * - 1 signature -> automatically selected
+   * - >1 signatures -> expectedSignerId is required
    *
-   * @param envelope Detached Majik Signature envelope.
-   * @param options Optional signer and MUID settings.
-   * @returns The result of the MUID verification.
-   * @throws ValidationError When the envelope contains no signatures or a
-   * requested signer cannot be resolved.
-   *
-   * @example
-   * ```ts
-   * const result = await majikah.muid.verifyFileDetached(envelope, {
-   *   muid: "alice",
-   * });
-   * ```
+   * The detached envelope is parsed locally first. The selected signature is
+   * then sent to the MUID gateway for identity-aware verification.
    */
   async verifyFileDetached(
     envelope: EnvelopeInput,
     options?: VerifyFileDetachedOptions,
   ): Promise<MuidVerifyResult> {
+    const expectedSignerId = normalizeOptionalIdentifier(
+      options?.expectedSignerId,
+      "expectedSignerId",
+    );
+
+    const muid = normalizeOptionalIdentifier(
+      options?.muid,
+      "muid",
+    );
+
     const env = await MajikSignatureEnvelope.from(envelope);
-    const signatures = env.signatures.map((s) => MajikSignature.fromJSON(s));
+
+    const signatures = env.signatures.map((signature) =>
+      MajikSignature.fromJSON(signature),
+    );
 
     const target = resolveTargetSignature(
       signatures,
-      options?.expectedSignerId,
+      expectedSignerId,
       {
         noSignatureHint: NO_SIGNATURE_HINT,
       },
     );
 
-    return this.verify({
-      id: options?.muid,
-      signature: target.toJSON(),
-    });
+    return this.verifySelectedSignature(target, muid);
   }
 }
 

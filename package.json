@@ -41,35 +41,38 @@
     "url": "https://github.com/Majikah/majikah-sdk/issues"
   },
   "scripts": {
+    "update": "npm i @majikah/majik-key@latest @majikah/majik-notary@latest @majikah/majik-signature@latest @majikah/majik-slink@latest @majikah/majik-universal-id@latest",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "package": "npm run build && npm version patch && git push && git push --tags",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:tsa": "npx vitest test/sdk-tsa.test.ts",
-    "test:slink": "npx vitest test/sdk-slink.test.ts",
-    "test:notary": "npx vitest test/sdk-notary.test.ts",
-    "test:muid": "npx vitest test/sdk-muid.test.ts"
+    "test:tsa": "vitest run test/sdk-tsa.test.ts",
+    "test:slink": "vitest run test/sdk-slink.test.ts",
+    "test:notary": "vitest run test/sdk-notary.test.ts",
+    "test:muid": "vitest run test/sdk-muid.test.ts"
   },
   "dependencies": {
-    "@majikah/majik-key": "^0.5.2",
-    "@majikah/majik-notary": "^0.1.1",
-    "@majikah/majik-signature": "^0.7.0",
-    "@majikah/majik-slink": "^0.2.3",
-    "@majikah/majik-universal-id": "^0.4.0"
+    "@majikah/majik-key": "^1.0.2",
+    "@majikah/majik-notary": "^0.2.1",
+    "@majikah/majik-signature": "^0.9.4",
+    "@majikah/majik-slink": "^0.3.0",
+    "@majikah/majik-universal-id": "^0.6.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
-    "dotenv": "^18.0.3",
+    "@solana/kit": "^8.4.0",
+    "@types/node": "^26.6.4",
+    "dotenv": "^18.0.5",
     "typedoc": "^0.28.20",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.3"
   },
   "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./tsa": {
       "types": "./dist/services/tsa/TSAClient.d.ts",
